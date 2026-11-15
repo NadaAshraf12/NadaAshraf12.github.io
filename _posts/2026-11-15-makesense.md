@@ -1,5 +1,5 @@
 ---
-title: "Owning MakeSense — From a Public Uploads Folder to Root"
+title: "MakeSense — From a Public Uploads Folder to Root"
 date: 2026-11-15
 platform: htb
 slug: makesense
@@ -13,7 +13,7 @@ excerpt_text: "An open uploads folder leaks a voicemail with creds; a hardcoded 
 description: "HackTheBox MakeSense walkthrough — open uploads folder, leaked voicemail, hardcoded AES key, forged stored XSS to admin, plugin RCE, credential reuse, and an OCR image webshell to root."
 ---
 
-A walkthrough of a Linux target running WordPress, taken from an unauthenticated network position all the way to a root shell. The point of this writeup isn't just what commands I ran — it's the methodology: enumerate everything first, let each decision be driven by a confirmed fact, and only then exploit. The interesting part of this box is that the foothold doesn't come from a plugin CVE — it comes from a browser-side "AI voice assistant" that ships its own encryption key, so the client is trusted and any payload can be forged.
+Most WordPress boxes fall to a plugin CVE. MakeSense doesn’t — it hands you the keys itself. A voicemail left in a public folder, an “AI voice assistant” that ships its own encryption key straight to the browser, and a chain of trust that collapses the moment you read the client-side JavaScript. This is the full path from an anonymous port scan to a root shell, and why every step was a decision, not a guess.
 
 > **Lab / authorized target.** Everything below was performed against a HackTheBox machine I was explicitly authorized to test. Target: makesense.htb (10.129.246.24).
 
