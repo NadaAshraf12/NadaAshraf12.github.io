@@ -1,0 +1,51 @@
+---
+layout: default
+---
+<div class="wrap">
+<main>
+  <div class="breadcrumb"><a href="{{ '/' | relative_url }}">~</a> / {{ page.platform | default: 'htb' }} / {{ page.slug }}</div>
+  <h1 class="title">{{ page.title }}</h1>
+  <div class="meta">
+    <span>{{ page.date | date: "%d %b %Y" }}</span><span class="dot">●</span>
+    <span>{{ site.author }}</span>
+    {% if page.read_time %}<span class="dot">●</span><span>{{ page.read_time }}</span>{% endif %}
+  </div>
+
+  {% if page.tags %}
+  <div class="tags">
+    {% if page.os %}<span class="tag os">os/{{ page.os | downcase }}</span>{% endif %}
+    {% if page.difficulty %}<span class="tag diff">diff/{{ page.difficulty | downcase }}</span>{% endif %}
+    {% for t in page.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+  </div>
+  {% endif %}
+
+  {% if page.target %}
+  <div class="machine">
+    <div><div class="k">Target</div><div class="v">{{ page.target }}</div></div>
+    <div><div class="k">IP</div><div class="v">{{ page.ip }}</div></div>
+    <div><div class="k">OS</div><div class="v">{{ page.os }}</div></div>
+    <div><div class="k">Difficulty</div><div class="v {{ page.difficulty | downcase }}">{{ page.difficulty }}</div></div>
+  </div>
+  {% endif %}
+
+  <article class="content">
+    {{ content }}
+  </article>
+
+  {% if page.previous.url or page.next.url %}
+  <nav class="postnav">
+    {% if page.previous.url %}<a href="{{ page.previous.url | relative_url }}"><div class="lab">← Previous</div>{{ page.previous.title | truncate: 40 }}</a>{% endif %}
+    {% if page.next.url %}<a href="{{ page.next.url | relative_url }}" class="nx"><div class="lab">Next →</div>{{ page.next.title | truncate: 40 }}</a>{% endif %}
+  </nav>
+  {% endif %}
+
+  <div class="site-foot">{{ site.tagline }} — <a href="{{ '/' | relative_url }}">~/ back home</a></div>
+</main>
+
+<aside>
+  <nav class="toc">
+    <div class="toc-title">On this page</div>
+    <div id="toc-list"></div>
+  </nav>
+</aside>
+</div>

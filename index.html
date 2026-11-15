@@ -1,0 +1,26 @@
+---
+layout: default
+---
+<div class="page">
+  <div class="home-hero">
+    <h1><span class="hash">0x</span>NADA</h1>
+    <p>{{ site.description }}</p>
+  </div>
+
+  {% for post in site.posts %}
+  <a class="postcard" href="{{ post.url | relative_url }}">
+    <h2>{{ post.title }}</h2>
+    <div class="pc-meta">{{ post.date | date: "%d %b %Y" }}{% if post.read_time %} · {{ post.read_time }}{% endif %}</div>
+    {% if post.excerpt_text %}<p class="pc-ex">{{ post.excerpt_text }}</p>{% endif %}
+    <div class="tags">
+      {% if post.os %}<span class="tag os">os/{{ post.os | downcase }}</span>{% endif %}
+      {% if post.difficulty %}<span class="tag diff">diff/{{ post.difficulty | downcase }}</span>{% endif %}
+      {% for t in post.tags limit:3 %}<span class="tag">{{ t }}</span>{% endfor %}
+    </div>
+  </a>
+  {% endfor %}
+
+  {% if site.posts.size == 0 %}
+  <p style="color:var(--muted);font-family:var(--mono)">No writeups yet. Drop a markdown file in <code>_posts/</code> to publish one.</p>
+  {% endif %}
+</div>

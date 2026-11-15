@@ -1,0 +1,37 @@
+# ─── Site identity ─────────────────────────────────────────────
+# Change these three lines to rebrand the whole site.
+title: "0xNADA"
+author: "Nada Ashraf"
+tagline: "rooted with too much coffee"
+description: "HackTheBox & pentest writeups — methodology first, from recon to root."
+
+# Your links (shown in the nav / footer). Leave blank to hide.
+medium_url: "https://medium.com/@nadana12155"
+github_url: "https://github.com/NadaAshraf12"
+
+# ─── Build settings ────────────────────────────────────────────
+# IMPORTANT: if you deploy to a *project* repo (e.g. github.com/NadaAshraf12/htb),
+# set baseurl to "/htb". For a user site (nadaashraf12.github.io) leave it "".
+baseurl: ""
+url: "https://nadaashraf12.github.io"
+
+markdown: kramdown
+highlighter: rouge
+permalink: /:categories/:year/:month/:day/:title/
+
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - vendor
